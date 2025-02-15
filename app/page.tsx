@@ -35,7 +35,7 @@ const IoTDashboard = () => {
 
   const fetchSensorData = async () => {
     try {
-      const res = await fetch('http://localhost:4000/api/sensor-data');
+      const res = await fetch('http://localhost:4001/api/sensor-data');
       if (!res.ok) throw new Error('Failed to fetch sensor data');
       const data = await res.json();
       setSensorData(data);

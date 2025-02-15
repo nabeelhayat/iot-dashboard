@@ -1,36 +1,23 @@
-FROM node:23-alpine AS base
+# Use the official Node.js image from the Docker Hub
+FROM node:23-alpine
 
-# Install dependencies only when needed
-FROM base AS deps
+# Set the working directory inside the container
 WORKDIR /app
+
+# Copy package.json and yarn.lock
 COPY package.json yarn.lock ./
+
+# Install dependencies using Yarn
 RUN yarn install --frozen-lockfile
 
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Copy the rest of the application code
 COPY . .
-RUN yarn run build
 
-# Production image, copy all the files and run next
-FROM base AS runner
-WORKDIR /app
+# Build the Next.js application
+RUN yarn build
 
-ENV NODE_ENV production
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-USER nextjs
-
+# Expose the port that the application will run on
 EXPOSE 3000
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
-
-CMD ["node", "server.js"]
+# Command to run the application
+CMD ["yarn", "start"]
