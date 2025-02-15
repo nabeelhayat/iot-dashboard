@@ -1,0 +1,55 @@
+name: Deploy to AWS Amplify
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+env:
+  AWS_REGION: us-east-1
+  APP_NAME: iot-dashboard
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Next.js application
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+
+      - name: Install AWS Amplify CLI
+        run: npm install -g @aws-amplify/cli
+
+      - name: Deploy to AWS Amplify
+        run: |
+          amplify configure --app-id ${{ secrets.AMPLIFY_APP_ID }} --yes
+          amplify push --yes
+        env:
+          AMPLIFY_APP_ID: ${{ secrets.AMPLIFY_APP_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AMPLIFY_DEPLOYMENT_TOKEN: ${{ secrets.AMPLIFY_DEPLOYMENT_TOKEN }}

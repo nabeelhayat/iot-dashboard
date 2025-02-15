@@ -1,101 +1,211 @@
-import Image from "next/image";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+"use client"
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+import React, { useState, useEffect } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const IoTDashboard = () => {
+  const [sensorData, setSensorData] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchSensorData = async () => {
+    try {
+      const res = await fetch('http://localhost:4000/api/sensor-data');
+      if (!res.ok) throw new Error('Failed to fetch sensor data');
+      const data = await res.json();
+      setSensorData(data);
+      setLoading(false);
+    } catch (err: any) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSensorData();
+    const interval = setInterval(fetchSensorData, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+
+  const filteredData = sensorData.filter((reading: any) => 
+    reading.deviceId.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex justify-between items-center mb-6">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-10 w-64" />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+        <div className="grid md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-36" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-64 w-full" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-36" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-64 w-full" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <Alert variant="destructive">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">IoT Sensor Dashboard</h1>
+        <div className="relative w-64">
+          <Input
+            type="text"
+            placeholder="Search by Device ID"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Temperature Readings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={filteredData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="timestamp" 
+                    tickFormatter={(time: any) => new Date(time).toLocaleTimeString()} 
+                  />
+                  <YAxis />
+                  <Tooltip 
+                    labelFormatter={(label: any) => new Date(label).toLocaleString()}
+                  />
+                  <Legend />
+                  <Line 
+                    type="monotone" 
+                    dataKey="temperature" 
+                    stroke="#2563eb" 
+                    strokeWidth={2}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Humidity Readings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={filteredData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="timestamp" 
+                    tickFormatter={(time: any) => new Date(time).toLocaleTimeString()} 
+                  />
+                  <YAxis />
+                  <Tooltip 
+                    labelFormatter={(label: any) => new Date(label).toLocaleString()}
+                  />
+                  <Legend />
+                  <Line 
+                    type="monotone" 
+                    dataKey="humidity" 
+                    stroke="#16a34a" 
+                    strokeWidth={2}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle>Latest Sensor Readings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Device ID</TableHead>
+                  <TableHead>Temperature</TableHead>
+                  <TableHead>Humidity</TableHead>
+                  <TableHead>Timestamp</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredData.map((reading: any) => (
+                  <TableRow key={reading.id}>
+                    <TableCell>{reading.deviceId}</TableCell>
+                    <TableCell>{reading.temperature}°C</TableCell>
+                    <TableCell>{reading.humidity}%</TableCell>
+                    <TableCell>
+                      {new Date(reading.timestamp).toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
-}
+};
+
+export default IoTDashboard;
